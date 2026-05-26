@@ -41,7 +41,7 @@ This library is designed to directly compile to WASM, using wasm-pack, and is co
 ```bash
 npm install voronoid
 ```
-Consult the [www](https://github.com/mdt-re/voronoid/tree/main/www) folder for [interactive examples](https://mdt-re.github.io/voronoid/) and more details on how to use with TypeScript and in a web environment. 
+Consult the [www](https://github.com/mdt-re/voronoid/tree/main/www) folder for [interactive examples](https://mdt-re.github.io/voronoid/) and more details on how to use with TypeScript and in a web environment. A full documentation of the npm library can be found in the [WASM Readme](https://github.com/mdt-re/voronoid/blob/main/README_WASM.md).
 
 To build the project for web usage:
 ```bash

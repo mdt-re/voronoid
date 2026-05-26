@@ -2,5 +2,5 @@
   "entryPoints": ["../pkg/voronoid.d.ts"],
   "out": "docs",
   "name": "voronoid WASM API",
-  "readme": "none"
+  "readme": "../README_WASM.md"
 }

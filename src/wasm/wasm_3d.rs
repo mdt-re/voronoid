@@ -11,7 +11,6 @@ use js_sys::{Reflect, Function, Array, Uint16Array};
 // --- Bounding Box ---
 
 /// Represents an axis-aligned bounding box in 3D space.
-/// Represents an axis-aligned bounding box in 3D space.
 #[wasm_bindgen]
 #[derive(Clone, Copy, Debug)]
 pub struct BoundingBox3D {
@@ -25,7 +24,7 @@ pub struct BoundingBox3D {
 
 #[wasm_bindgen]
 impl BoundingBox3D {
-    /// Creates a new 3D bounding box.
+    /// Creates a new 3D bounding box. This box will contain the full tessellation and all generators.
     ///
     /// @param min_x The minimum x coordinate.
     /// @param min_y The minimum y coordinate.

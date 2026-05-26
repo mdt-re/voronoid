@@ -73,7 +73,7 @@ export async function run(app: HTMLElement) {
         showLabels: false,
         showNeighborLabels: false,
         checkNeighbors: false,
-        colorByVertexCount: false,
+        colorByNeighbors: false,
     };
 
     // --- Three.js Setup ---
@@ -273,10 +273,9 @@ export async function run(app: HTMLElement) {
 
             // Faces
             if (params.showFaces) {
-                if (params.colorByVertexCount) {
+                if (params.colorByNeighbors) {
                     presentCounts.add(numVerts);
 
-                console.log(numVerts);
                     const clamped = Math.min(numVerts, 12);
                     cellColor.setHSL((clamped - 3) / 10.0, 1.0, 0.5);
                 }
@@ -419,10 +418,10 @@ export async function run(app: HTMLElement) {
 
         infoText.innerText = `Cells: ${cellCount}\nTotal Area: ${totalArea.toFixed(2)}`;
 
-        if (params.showFaces && params.colorByVertexCount) {
+        if (params.showFaces && params.colorByNeighbors) {
             legendDiv.style.display = 'block';
             const sortedCounts = Array.from(presentCounts).sort((a, b) => a - b);
-            let html = '<div style="margin-bottom:5px; font-weight:bold; text-transform:lowercase;">vertices</div>';
+            let html = '<div style="margin-bottom:5px; font-weight:bold; text-transform:lowercase;">neighbors</div>';
             for (const count of sortedCounts) {
                 const clamped = Math.min(count, 12);
                 const hue = (clamped - 3) / 10.0;
@@ -471,7 +470,7 @@ export async function run(app: HTMLElement) {
     gui.add(params, 'showGenerators').name('show points').onChange(updateVisualization);
     gui.add(params, 'showEdges').name('show edges').onChange(updateVisualization);
     gui.add(params, 'checkNeighbors').name('check neighbors').onChange(updateVisualization);
-    gui.add(params, 'colorByVertexCount').name('color (#vertices)').onChange(updateVisualization);
+    gui.add(params, 'colorByNeighbors').name('color (#neighbors)').onChange(updateVisualization);
     gui.add(params, 'showLabels').name('show ids').onChange(updateVisualization);
     gui.add(params, 'showNeighborLabels').name('show neighbors').onChange(updateVisualization);
     gui.add(params, 'showFaces').name('show faces').onChange(updateVisualization);

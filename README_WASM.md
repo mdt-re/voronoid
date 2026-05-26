@@ -1,6 +1,6 @@
 # voronoid
 
-Rust library for 3D Voronoi tessellations, designed to be used in Rust as well as compiled to WebAssembly (TypeScript interface). It provides a flexible and feature-rich implementation to calculate the individual cells by a clipping procedure based on the generating points, the bounding box and possible walls. The tessellation struct takes a spatial algorithm to calculate the nearest neighbours efficiently and a cell struct which manages cell data and the clipping algorithm. The combination of spatial algorithm and cell can then be matched to the specific application and distribution of generators. A few [interactive examples](https://mdt-re.github.io/voronoid/) are shown below.
+Rust library for 3D Voronoi tessellations, designed to be used in Rust as well as compiled to WebAssembly (TypeScript interface). It provides a flexible and feature-rich implementation to calculate the individual cells by a clipping procedure based on the generating points, the bounding box and possible walls. The tessellation struct takes a spatial algorithm to calculate the nearest neighbours efficiently and a cell struct which manages cell data and the clipping algorithm. The combination of spatial algorithm and cell can then be matched to the specific application and distribution of generators. A few [interactive examples](https://mdt-re.github.io/voronoid/) with corresponding [scripts](https://github.com/mdt-re/voronoid/tree/main/www/src/examples) as reference are shown below.
 <p align="center">
   <a href="https://mdt-re.github.io/voronoid/?example=moving_cell">
     <img src="https://raw.githubusercontent.com/mdt-re/voronoid/refs/heads/main/www/src/assets/moving_cell.png" width="196px" alt="moving cell" />
@@ -30,25 +30,27 @@ Rust library for 3D Voronoi tessellations, designed to be used in Rust as well a
 
 ## Installation
 
+The npm package has no external dependencies and is designed for TypeScript and can be installed by:
 ```bash
 npm install voronoid
 ```
+Below some usage examples and the documentation are provided.
 
 ## Usage
 
 ```typescript
-import {init, Tessellation, BoundingBox, Wall } from 'voronoid';
+import {init, Tessellation3D, BoundingBox3D, Wall3D, WALL_ID_MAX } from 'voronoid';
 
 async function run() {
     await init();
 
     // Create tessellation from bounding box and bins per axis.
-    const bounds = new BoundingBox(0, 0, 0, 100, 100, 100);
+    const bounds = new BoundingBox3D(0, 0, 0, 100, 100, 100);
     const bin_cnt = 10;
-    const tess = new Tessellation(bounds, bin_cnt, bin_cnt, bin_cnt);
+    const tess = new Tessellation3D(bounds, bin_cnt, bin_cnt, bin_cnt);
 
     // Optional: add a wall to constrain the tessellation.
-    tess.add_wall(Wall.new_sphere(50, 50, 50, 40, -1000));
+    tess.add_wall(Wall3D.new_sphere(50, 50, 50, 40, WALL_ID_MAX));
 
     // Set the generators randomly, explicit setting via set_generators
     // or read_generators is also possible.
@@ -72,6 +74,18 @@ async function run() {
 
 run();
 ```
+
+## Documentation
+
+The complete API documentation for the TypeScript interface can be generated locally.
+
+### Core Classes
+* **`Tessellation2D/3D`**: The main class for calculating the Voronoi tessellation, managing generators and cells.
+* **`BoundingBox2D/3D`**: Defines the boundaries of the space in which the tessellation occurs.
+* **`Wall2D/3D`**: Defines optional boundary walls (e.g., spheres, cylinders, planes) that further constrain the cells.
+
+For more detailed information about the underlying mathematical algorithms, you can also consult the Rust documentation.
+
 
 ## License
 

@@ -45,7 +45,8 @@ jobs:
           CI: false
         run: |
           npm install
-          npx vite build
+          npm run build
+          touch dist/.nojekyll
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

@@ -39,6 +39,21 @@ export async function run(app: HTMLElement) {
     stats.dom.style.pointerEvents = 'auto';
     resultsDiv.appendChild(stats.dom);
 
+    const legendDiv = document.createElement('div');
+    legendDiv.style.position = 'absolute';
+    legendDiv.style.bottom = '10px';
+    legendDiv.style.left = '10px';
+    legendDiv.style.textAlign = 'left';
+    legendDiv.style.color = 'white';
+    legendDiv.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+    legendDiv.style.padding = '10px';
+    legendDiv.style.fontFamily = 'monospace';
+    legendDiv.style.pointerEvents = 'none';
+    legendDiv.style.userSelect = 'none';
+    legendDiv.style.display = 'none';
+    legendDiv.style.zIndex = '10';
+    app.appendChild(legendDiv);
+
     const params = {
         wallType: 'sphere',
         radius: 40.0,
@@ -54,6 +69,7 @@ export async function run(app: HTMLElement) {
         surfaceView: false,
         distributeOnSurface: false,
         checkNeighbors: false,
+        colorByNeighbors: false,
     };
 
     // --- Three.js Setup ---
@@ -377,22 +393,13 @@ export async function run(app: HTMLElement) {
     // 2. Create Meshes for Cells
     const material = new THREE.MeshStandardMaterial({
         color: 0xffffff,
+        vertexColors: true,
         roughness: 0.5,
         metalness: 0.1,
         transparent: true,
         opacity: params.opacity,
         side: THREE.DoubleSide,
         depthWrite: false // Helps with transparency
-    });
-
-    const redMaterial = new THREE.MeshStandardMaterial({
-        color: 0xff0000,
-        roughness: 0.5,
-        metalness: 0.1,
-        transparent: true,
-        opacity: params.opacity,
-        side: THREE.DoubleSide,
-        depthWrite: false
     });
 
     const geometryGroup = new THREE.Group();
@@ -408,6 +415,7 @@ export async function run(app: HTMLElement) {
 
         const cellCount = tess.count_cells;
         let totalVolume = 0;
+        const presentCounts = new Set<number>();
 
         for (let i = 0; i < cellCount; i++) {
             const cell = tess.get_cell(i);
@@ -438,6 +446,21 @@ export async function run(app: HTMLElement) {
             }
 
             const positions: number[] = [];
+            const colors: number[] = [];
+            const numNeighbors = faces.length;
+
+            if (params.colorByNeighbors) {
+                presentCounts.add(numNeighbors);
+            }
+
+            let r = 1.0, g = 1.0, b = 1.0;
+            if (isFailing) {
+                r = 1.0; g = 0.0; b = 0.0;
+            } else if (params.colorByNeighbors) {
+                const clamped = Math.min(numNeighbors, 24);
+                const color = new THREE.Color().setHSL((clamped - 8) / 16.0, 1.0, 0.5);
+                r = color.r; g = color.g; b = color.b;
+            }
             
             // Triangulate faces (Fan triangulation for convex polygons)
             for (let j = 0; j < faces.length; j++) {
@@ -463,14 +486,19 @@ export async function run(app: HTMLElement) {
                     positions.push(v0x, v0y, v0z);
                     positions.push(vertices[v1Idx * 3], vertices[v1Idx * 3 + 1], vertices[v1Idx * 3 + 2]);
                     positions.push(vertices[v2Idx * 3], vertices[v2Idx * 3 + 1], vertices[v2Idx * 3 + 2]);
+
+                    colors.push(r, g, b);
+                    colors.push(r, g, b);
+                    colors.push(r, g, b);
                 }
             }
 
             const geometry = new THREE.BufferGeometry();
             geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+            geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
             geometry.computeVertexNormals();
 
-            const mesh = new THREE.Mesh(geometry, isFailing ? redMaterial : material);
+            const mesh = new THREE.Mesh(geometry, material);
             geometryGroup.add(mesh);
         }
 
@@ -481,6 +509,21 @@ export async function run(app: HTMLElement) {
             `expected volume:  ${expected.toFixed(2)}\n` +
             `--------------------------------------\n` +
             `deviation:        ${deviation.toFixed(2)}%`;
+
+        if (params.colorByNeighbors) {
+            legendDiv.style.display = 'block';
+            const sortedCounts = Array.from(presentCounts).sort((a, b) => a - b);
+            let html = '<div style="margin-bottom:5px; font-weight:bold; text-transform:lowercase;">neighbors</div>';
+            for (const count of sortedCounts) {
+                const clamped = Math.min(count, 24);
+                const hue = (clamped - 8) / 16.0;
+                const color = new THREE.Color().setHSL(hue, 1.0, 0.5).getStyle();
+                html += `<div style="display:flex; align-items:center; gap:8px; margin-bottom:2px;"><div style="width:12px; height:12px; background-color:${color};"></div><div>${count}</div></div>`;
+            }
+            legendDiv.innerHTML = html;
+        } else {
+            legendDiv.style.display = 'none';
+        }
     }
 
     initTessellation();
@@ -488,22 +531,23 @@ export async function run(app: HTMLElement) {
     gui.add(params, 'count', 100, 5000, 100).onChange(initTessellation);
     gui.add(params, 'opacity', 0, 1).onChange((v: number) => {
         material.opacity = v;
-        redMaterial.opacity = v;
     });
     gui.add(params, 'surfaceView').name('surface view').onChange(updateVisualization);
     gui.add(params, 'distributeOnSurface').name('generators on surface').onChange(initTessellation);
     gui.add(params, 'checkNeighbors').name('check neighbors').onChange(updateVisualization);
+    gui.add(params, 'colorByNeighbors').name('color (#neighbors)').onChange(updateVisualization);
 
-    const wallTypeCtrl = gui.add(params, 'wallType', ['sphere', 'cylinder', 'cone', 'torus', 'trefoil', 'tetrahedron', 'hexahedron', 'octahedron', 'dodecahedron', 'icosahedron', 'ellipsoid', 'bezier', 'catmull']).name('wall');
+    const wallFolder = gui.addFolder('wall settings');
+    const wallTypeCtrl = wallFolder.add(params, 'wallType', ['sphere', 'cylinder', 'cone', 'torus', 'trefoil', 'tetrahedron', 'hexahedron', 'octahedron', 'dodecahedron', 'icosahedron', 'ellipsoid', 'bezier', 'catmull']).name('wall');
 
-    const radiusCtrl = gui.add(params, 'radius', 5, 45).name('radius').onChange(initTessellation);
-    const radiusACtrl = gui.add(params, 'radiusA', 5, 45).name('radius x').onChange(initTessellation);
-    const radiusBCtrl = gui.add(params, 'radiusB', 5, 45).name('radius y').onChange(initTessellation);
-    const radiusCCtrl = gui.add(params, 'radiusC', 5, 45).name('radius z').onChange(initTessellation);
-    const heightCtrl = gui.add(params, 'height', 10, 100).name('height').onChange(initTessellation);
-    const tubeCtrl = gui.add(params, 'tube', 1, 20).name('radius tube').onChange(initTessellation);
-    const scaleCtrl = gui.add(params, 'scale', 5, 20).name('scale').onChange(initTessellation);
-    const angleCtrl = gui.add(params, 'angle', 0.1, 1.0).name('angle').onChange(initTessellation);
+    const radiusCtrl = wallFolder.add(params, 'radius', 5, 45).name('radius').onChange(initTessellation);
+    const radiusACtrl = wallFolder.add(params, 'radiusA', 5, 45).name('radius x').onChange(initTessellation);
+    const radiusBCtrl = wallFolder.add(params, 'radiusB', 5, 45).name('radius y').onChange(initTessellation);
+    const radiusCCtrl = wallFolder.add(params, 'radiusC', 5, 45).name('radius z').onChange(initTessellation);
+    const heightCtrl = wallFolder.add(params, 'height', 10, 100).name('height').onChange(initTessellation);
+    const tubeCtrl = wallFolder.add(params, 'tube', 1, 20).name('radius tube').onChange(initTessellation);
+    const scaleCtrl = wallFolder.add(params, 'scale', 5, 20).name('scale').onChange(initTessellation);
+    const angleCtrl = wallFolder.add(params, 'angle', 0.1, 1.0).name('angle').onChange(initTessellation);
 
     const updateVisibility = () => {
         const t = params.wallType;

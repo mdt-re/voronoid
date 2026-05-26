@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build && typedoc --out dist/docs",
+    "build": "tsc -b && vite build && typedoc --out dist/docs",
     "preview": "vite preview",
     "test": "vitest",
     "doc": "typedoc"
